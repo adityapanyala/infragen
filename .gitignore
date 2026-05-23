@@ -5,3 +5,4 @@ __pycache__/
 .infragen/
 *.md
 !README.md
+test_scripts/
