@@ -4,3 +4,4 @@ __pycache__/
 .env
 .infragen/
 *.md
+!README.md
