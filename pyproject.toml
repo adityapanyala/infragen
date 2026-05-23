@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "infragen"
+version = "0.1.0"
+description = "Deploy Apps to AWS from CLI"
+authors = ["Aditya Panyala"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python       = "^3.11"
+typer        = "^0.12"
+rich         = "^13"
+langgraph    = "^0.2"
+langchain-groq = "^0.1"
+boto3        = "^1.34"
+python-hcl2  = "^4.3"
+python-dotenv = "^1.0"
+httpx        = "^0.27"
+jinja2       = "^3.1"
+
+[tool.poetry.dev-dependencies]
+pytest       = "^8"
+pytest-mock  = "^3"
+
+[tool.poetry.scripts]
+infragen = "cli.main:app"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
