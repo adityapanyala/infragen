@@ -3,7 +3,12 @@ name = "infragen"
 version = "0.1.0"
 description = "Deploy Apps to AWS from CLI"
 authors = ["Aditya Panyala"]
-package-mode = false
+packages = [
+    { include = "cli" },
+    { include = "scanner" },
+    { include = "models" },
+    { include = "prerequisites" },
+]
 
 [tool.poetry.dependencies]
 python       = "^3.11"
@@ -17,7 +22,7 @@ python-dotenv = "^1.0"
 httpx        = "^0.27"
 jinja2       = "^3.1"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest       = "^8"
 pytest-mock  = "^3"
 
