@@ -1,7 +1,7 @@
 import json
 import re
 from pathlib import Path
-from models import Runtime, Framework, ServiceType, ScanResult
+from models import Runtime, Framework, ServiceType
 
 class DetectionError(Exception):
     pass

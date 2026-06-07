@@ -1,0 +1,37 @@
+{% if needs_rds %}
+resource "aws_db_subnet_group" "main" {
+  name       = "{{ project_name }}-db-subnet-group"
+  subnet_ids = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+
+  tags = {
+    project    = "{{ project_name }}"
+    managed_by = "infragen"
+  }
+}
+
+resource "aws_db_instance" "main" {
+  identifier              = "{{ project_name }}-{{ environment }}-db"
+  engine                  = "{{ rds_engine }}"
+  engine_version          = "{{ '15' if rds_engine == 'postgres' else '8.0' }}"
+  instance_class          = "{{ rds_instance_class }}"
+  allocated_storage       = 20
+  storage_type            = "gp2"
+  db_name                 = "{{ project_name | replace('-', '_') }}"
+  username                = "dbadmin"
+  password                = random_password.db_password.result
+  db_subnet_group_name    = aws_db_subnet_group.main.name
+  vpc_security_group_ids  = [aws_security_group.rds.id]
+  publicly_accessible     = false
+  skip_final_snapshot     = false
+  deletion_protection     = true
+  backup_retention_period = 7
+  multi_az                = false
+
+  tags = {
+    Name        = "{{ project_name }}-db"
+    project     = "{{ project_name }}"
+    environment = "{{ environment }}"
+    managed_by  = "infragen"
+  }
+}
+{% endif %}

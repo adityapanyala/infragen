@@ -1,0 +1,20 @@
+resource "tls_private_key" "infragen" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "infragen" {
+  key_name   = "infragen-{{ project_name }}"
+  public_key = tls_private_key.infragen.public_key_openssh
+
+  tags = {
+    project    = "{{ project_name }}"
+    managed_by = "infragen"
+  }
+}
+
+resource "local_file" "private_key" {
+  content         = tls_private_key.infragen.private_key_pem
+  filename        = "${path.module}/infragen-{{ project_name }}.pem"
+  file_permission = "0400"
+}

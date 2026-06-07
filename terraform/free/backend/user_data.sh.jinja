@@ -1,0 +1,43 @@
+#!/bin/bash
+set -e
+
+PROJECT_NAME="{{ project_name }}"
+PORT="{{ port }}"
+REGION="{{ region }}"
+ENVIRONMENT="{{ environment }}"
+
+# Install Docker and AWS CLI
+yum update -y
+yum install -y docker aws-cli jq
+systemctl start docker
+systemctl enable docker
+usermod -aG docker ec2-user
+
+# Log into ECR
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+
+ECR_URL=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$PROJECT_NAME
+
+# Pull latest image
+docker pull $ECR_URL:latest
+
+# Fetch env vars from SSM and build docker env args
+ENV_ARGS=""
+while IFS=$'\t' read -r name value; do
+  key=$(basename "$name")
+  ENV_ARGS="$ENV_ARGS -e $key=$value"
+done < <(aws ssm get-parameters-by-path \
+  --path "/$PROJECT_NAME/$ENVIRONMENT/" \
+  --with-decryption \
+  --region $REGION \
+  --query "Parameters[*].[Name,Value]" \
+  --output text)
+
+# Run the container
+docker run -d \
+  --name $PROJECT_NAME \
+  --restart always \
+  -p $PORT:$PORT \
+  $ENV_ARGS \
+  $ECR_URL:latest

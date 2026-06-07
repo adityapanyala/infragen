@@ -2,7 +2,7 @@ import json
 import re
 from pathlib import Path
 
-from models import Runtime, ScanResult
+from models import Runtime
 
 
 def scan_dependencies(project_dir: Path, runtime: Runtime) -> dict:
@@ -51,9 +51,6 @@ def _scan_python_deps(project_dir: Path) -> dict:
 
     if "celery" in packages:
         warnings.append("Background worker detected (celery) — not managed by infragen")
-
-    if any(p in packages for p in ("gunicorn",)):
-        pass
 
     return {
         "needs_rds": needs_rds,

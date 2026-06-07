@@ -1,0 +1,126 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "{{ region }}"
+}
+
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+}
+
+resource "aws_instance" "app" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "{{ instance_type }}"
+  key_name               = aws_key_pair.infragen.key_name
+  vpc_security_group_ids = [aws_security_group.app.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
+  user_data              = filebase64("${path.module}/user_data.sh")
+
+  tags = {
+    Name        = "{{ project_name }}-{{ environment }}"
+    project     = "{{ project_name }}"
+    environment = "{{ environment }}"
+    managed_by  = "infragen"
+  }
+}
+
+resource "aws_eip" "app" {
+  instance = aws_instance.app.id
+  domain   = "vpc"
+
+  tags = {
+    Name        = "{{ project_name }}-eip"
+    project     = "{{ project_name }}"
+    environment = "{{ environment }}"
+    managed_by  = "infragen"
+  }
+}
+
+resource "aws_iam_role" "ec2_role" {
+  name = "{{ project_name }}-ec2-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+    }]
+  })
+
+  tags = {
+    project    = "{{ project_name }}"
+    managed_by = "infragen"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "ecr_policy" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "{{ project_name }}-ec2-profile"
+  role = aws_iam_role.ec2_role.name
+}
+
+{% if needs_rds %}
+resource "random_password" "db_password" {
+  length  = 16
+  special = false
+}
+
+resource "aws_db_instance" "main" {
+  identifier              = "{{ project_name }}-{{ environment }}-db"
+  engine                  = "{{ rds_engine }}"
+  engine_version          = "{{ '15' if rds_engine == 'postgres' else '8.0' }}"
+  instance_class          = "{{ rds_instance_class }}"
+  allocated_storage       = 20
+  storage_type            = "gp2"
+  db_name                 = "{{ project_name | replace('-', '_') }}"
+  username                = "dbadmin"
+  password                = random_password.db_password.result
+  vpc_security_group_ids  = [aws_security_group.rds.id]
+  publicly_accessible     = true
+  skip_final_snapshot     = true
+  deletion_protection     = true
+  backup_retention_period = 7
+
+  tags = {
+    Name        = "{{ project_name }}-db"
+    project     = "{{ project_name }}"
+    environment = "{{ environment }}"
+    managed_by  = "infragen"
+  }
+}
+{% endif %}

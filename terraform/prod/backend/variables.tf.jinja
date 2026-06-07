@@ -1,0 +1,29 @@
+variable "project_name" {
+  description = "Name of the project"
+  type        = string
+  default     = "{{ project_name }}"
+}
+
+variable "environment" {
+  description = "Deployment environment"
+  type        = string
+  default     = "{{ environment }}"
+}
+
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = "{{ region }}"
+}
+
+variable "port" {
+  description = "Application port"
+  type        = number
+  default     = {{ port }}
+}
+
+variable "rds_instance_class" {
+  description = "RDS instance class"
+  type        = string
+  default     = "{{ rds_instance_class }}"
+}

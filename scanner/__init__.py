@@ -88,7 +88,7 @@ def _detect_build_info(framework, project_dir: Path) -> tuple[str | None, str | 
         return build_cmd, "build"
 
     if framework == Framework.NEXTJS:
-        return "npm run build", "out"
+        return "npm run build", ".next"
 
     return None, None
 

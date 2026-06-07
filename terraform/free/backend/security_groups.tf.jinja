@@ -1,0 +1,63 @@
+resource "aws_security_group" "app" {
+  name        = "{{ project_name }}-app-sg"
+  description = "Security group for {{ project_name }} application"
+
+  ingress {
+    description = "Application port"
+    from_port   = {{ port }}
+    to_port     = {{ port }}
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "SSH access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "{{ project_name }}-app-sg"
+    project     = "{{ project_name }}"
+    environment = "{{ environment }}"
+    managed_by  = "infragen"
+  }
+}
+
+{% if needs_rds %}
+resource "aws_security_group" "rds" {
+  name        = "{{ project_name }}-rds-sg"
+  description = "Security group for {{ project_name }} RDS — EC2 access only"
+
+  ingress {
+    description     = "DB access from EC2 only"
+    from_port       = {{ '5432' if rds_engine == 'postgres' else '3306' }}
+    to_port         = {{ '5432' if rds_engine == 'postgres' else '3306' }}
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "{{ project_name }}-rds-sg"
+    project     = "{{ project_name }}"
+    environment = "{{ environment }}"
+    managed_by  = "infragen"
+  }
+}
+{% endif %}

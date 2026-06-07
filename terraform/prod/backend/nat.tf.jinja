@@ -1,0 +1,22 @@
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = {
+    Name       = "{{ project_name }}-nat-eip"
+    project    = "{{ project_name }}"
+    managed_by = "infragen"
+  }
+}
+
+resource "aws_nat_gateway" "main" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public_a.id
+
+  tags = {
+    Name       = "{{ project_name }}-nat"
+    project    = "{{ project_name }}"
+    managed_by = "infragen"
+  }
+
+  depends_on = [aws_internet_gateway.main]
+}
