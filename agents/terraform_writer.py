@@ -8,8 +8,11 @@ TEMPLATE_BASE = Path(__file__).parent.parent / "terraform"
 
 
 def run_terraform_writer(spec: InfraSpec) -> Path:
+    import shutil
     template_dir = _select_template_dir(spec)
     output_dir = spec.terraform_output_dir
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     env = Environment(
